@@ -1,5 +1,5 @@
 // Avoid `console` errors in browsers that lack a console.
-(function() {
+;(function() {
     var method;
     var noop = function noop() {};
     var methods = [
@@ -58,7 +58,7 @@
 // issues. Applications that use the code below will continue to work seamlessly
 // when that happens.
 
-(function() {
+;(function() {
   // We are already defined. Hooray!
   if (window.google && google.gears) {
     return;
@@ -130,7 +130,7 @@
 //Date: $Date$:    
 //
 
-window.geo = window.geo || (function() {
+;window.geo = window.geo || (function() {
 
 var bb_success;
 var bb_error;
