@@ -418,4 +418,4 @@ var AudioletApp = function() {
   randomBeat('b', .25, 8, .25);
 
   repeatEvery(.5, function() { playDrum('h', 0); });
-};
+}; 
