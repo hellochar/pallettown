@@ -1,9 +1,11 @@
 ;(function() {
     "use strict";
 
+    var geo = window.geo;
+
     function getLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(showPosition);
+        if (geo.init()) {
+            geo.getCurrentPosition(showPosition);
         } else {
             $("#location").html("Geolocation is not supported by this browser.");
         }
