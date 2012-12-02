@@ -170,6 +170,82 @@ function playExample() {
         this.playBassSynth();
     }
 
+    var randomGenerator = function(probabilities) {
+        //normalize it
+        var sum = 0.0;
+        for (var i = 0; i < probabilities.length; i++) {
+            sum += probabilities[i];
+        }
+        for (var i = 0; i < probabilities.length; i++) {
+            probabilities[i] = probabilities[i]/sum;
+        }
+        var rando = Math.random();
+
+        var tmp = 0.0;
+        for (var i = 0; i < 8; i++) {
+            tmp += probabilities[i]
+            if (tmp > rando) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    var randomDurationGenerator = function(probabilities, index) {
+        //normalize probabilities
+        var sum = 0.0;
+        for (var i = 0; i < probabilities.length; i++) {
+            sum += probabilities[i];
+        }
+        for (var i = 0; i < probabilities.length; i++) {
+            probabilities[i] = probabilities[i]/sum;
+        }
+
+        var rando = Math.random();
+
+        if (probabilities[index] < 1.0/(2.0*probabilities.length)) {
+            return .5;
+        }
+
+        var tmp = probabilities[index]*1.8;
+        var duration = .5;
+        while (tmp < rando) {
+            tmp += probabilities[index]*3.0;
+            duration += .5;
+        }
+        return duration;
+
+    }
+
+    var fixMeter = function (totalBeats, notes, octaves, noteDurations) {
+        var tmp = totalBeats;
+        var stoppingIndex = 0;
+        for (var i = 0; i < noteDurations.length; i++) {
+            tmp -= noteDurations[i]
+            if (tmp <= 0) {
+                stoppingIndex = i+1;
+                break;
+            }
+        }
+
+        if (stoppingIndex >= 0) {
+            notes = notes.splice(stoppingIndex);
+            octaves = octaves.splice(stoppingIndex);
+            noteDurations = noteDurations.splice(stoppingIndex);
+        } else {
+            notes = [];
+            octaves = [];
+            noteDurations = [];
+        }
+
+        var totalTime = 0.0;
+        for (var i = 0; i < noteDurations.length; i++) {
+            totalTime += noteDurations[i];
+        }
+        noteDurations[noteDurations.length - 1] = totalBeats - totalTime;
+        
+    }
+
     Demo.prototype.playHighSynth = function() {
         // High synth - scheduled as a mono synth (i.e. one instance keeps
         // running and the gate and frequency are switched)
@@ -178,29 +254,84 @@ function playExample() {
         // Connect it to the output so we can hear it
         this.highSynth.connect(this.audiolet.output);
 
-        // Four rising arpeggios starting at sucessively higher notes
-        var arp1 = new PArithmetic(0, 1, 4);
-        var arp2 = new PArithmetic(1, 1, 4);
-        var arp3 = new PArithmetic(2, 1, 4);
-        var arp4 = new PArithmetic(3, 1, 4);
+        var numNotes = 16;
+        var totalBeats = numNotes/2.0;
+        var noteProbabilities = [1,.5,1,.75,1,.15,.15];
+        var origProbs = noteProbabilities.slice(0);
 
-        // Plays the arpeggios one after another, then repeat them
-        var degreePattern = new PSequence([arp1, arp2, arp3, arp4],
-                                          Infinity);
+        var octaves = [];
+        for (var i = 0; i < numNotes; i++) {
+            octaves[i] = 3;
+        }
+
+        var notes = [];
+        for (var i = 0; i < numNotes; i++) {
+            notes[i] = randomGenerator(noteProbabilities);
+            if (i != 0 && notes[i-1] == 0 && notes[i] == 6)
+                octaves[i] = 2;
+            else if (i != 0 && notes[i-1] == 6 && notes[i] == 0)
+                octaves[i] = 4;
+
+            noteProbabilities = origProbs.slice(0);
+            for (var j = 0; j < 7; j++) {
+                var tmp1 = notes[i] - j;
+                var tmp2 = j - notes[i];
+                if (tmp1 < 0) {
+                    tmp1 = tmp1 + 7;
+                } else if (tmp2 < 0) {
+                    tmp2 = tmp2 + 7;
+                } else if (tmp1 == 0) {
+                    noteProbabilities[(notes[i]+j)%7] /= 2.0;
+                    continue;
+                }
+                var noteDist = Math.min(tmp1, tmp2);
+                noteProbabilities[(notes[i]+j)%7] *= 1.5/noteDist;
+            }
+        }
+
+        //laplace sampling sorta
+        var noteDurProbabilities = noteProbabilities.slice(0);
+        for (var i = 0; i < 7; i++) {
+            noteDurProbabilities[i] += 0.07;
+        }
+
+        var origDurProbabilities = noteDurProbabilities.slice(0);
 
         // How long each event lasts
-        var durationPattern = new PSequence([0.5], Infinity);
+        var noteDurations = [];
+        for (var i = 0; i < numNotes; i++) {
+            noteDurations[i] = randomDurationGenerator(noteDurProbabilities, notes[i]);
+            //noteDurProbabilities = origDurProbabilities.slice(0);
+        }
+
+        console.log(notes);
+        console.log(octaves);
+        console.log(noteDurations);
+
+        fixMeter(totalBeats, notes, octaves, noteDurations);
+
+
+        var degreePattern = new PSequence(notes, Infinity);
+        
+        var octavePattern = new PSequence(octaves, Infinity);
+
+        var durationPattern = new PSequence(noteDurations, Infinity);
+
+        console.log(degreePattern);
+        console.log(octavePattern);
+        console.log(durationPattern);
+
 
         // Schedule the patterns to play
-        this.audiolet.scheduler.play([degreePattern],
+        this.audiolet.scheduler.play([degreePattern, octavePattern],
                                      durationPattern,
-            function(degree) {
+            function(degree, octave) {
                 // Set the gate
                 this.highSynth.trigger.trigger.setValue(1);
                 // Calculate the frequency from the scale
                 var frequency = this.scale.getFrequency(degree,
                                                         this.c2Frequency,
-                                                        3);
+                                                        octave);
                 // Set the frequency
                 this.highSynth.triangle.frequency.setValue(frequency);
             }.bind(this)
