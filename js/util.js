@@ -74,4 +74,7 @@ var fixMeter = function (totalBeats, notes, octaves, noteDurations) {
     
 }
 
+Array.prototype.choose = function() {
+  return this[Math.floor(Math.random() * this.length)];
+}
 
