@@ -1,6 +1,5 @@
 var HighSynth = function(audiolet) {
     AudioletGroup.call(this, audiolet, 0, 1);
-
     // Triangle base oscillator
     this.triangle = new Triangle(audiolet);
 
@@ -10,6 +9,15 @@ var HighSynth = function(audiolet) {
     // Gain envelope
     this.gainEnv = new PercussiveEnvelope(audiolet, 0, 0.1, 0.15);
     this.gainEnvMulAdd = new MulAdd(audiolet, 0.1);
+
+    // Synth 1
+    // this.gainEnv = new ADSREnvelope(audiolet, 1, 2.618, .872, .3, .1);
+
+    // Synth 2
+    // this.gainEnv = new ADSREnvelope(audiolet, 1, 1.2, .3, .2, .2)
+    // this.lowPass = new LowPassFilter(audiolet, 440);
+    // this.reverb = new Reverb(audiolet, 1, .8, .1);
+
     this.gain = new Gain(audiolet);
 
     // Feedback delay
@@ -20,12 +28,21 @@ var HighSynth = function(audiolet) {
     this.pan = new Pan(audiolet);
     this.panLFO = new Sine(audiolet, 1 / 8);
 
-
-    // Connect oscillator
     this.triangle.connect(this.gain);
 
     // Connect trigger and envelope
     this.trigger.connect(this.gainEnv);
+
+    // // Synth 1
+    // this.gainEnv.connect(this.gain);
+    // this.gain.connect(this.outputs[0]);
+
+    // // Synth 2
+    // this.gainEnv.connect(this.gain);
+    // this.gain.connect(this.lowPass);
+    // this.lowPass.connect(this.reverb);
+    // this.reverb.connect(this.outputs[0]);
+
     this.gainEnv.connect(this.gainEnvMulAdd);
     this.gainEnvMulAdd.connect(this.gain, 0, 1);
     this.gain.connect(this.delay);
