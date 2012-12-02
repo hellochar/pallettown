@@ -304,18 +304,86 @@ function playStuff() {
             //noteDurProbabilities = origDurProbabilities.slice(0);
         }
 
+
+
+/*
         console.log(notes);
         console.log(octaves);
         console.log(noteDurations);
-
+*/
         fixMeter(totalBeats, notes, octaves, noteDurations);
 
 
-        var degreePattern = new PSequence(notes, Infinity);
-        
-        var octavePattern = new PSequence(octaves, Infinity);
 
-        var durationPattern = new PSequence(noteDurations, Infinity);
+
+
+
+        var octaves2 = [];
+        for (var i = 0; i < numNotes; i++) {
+            octaves2[i] = 3;
+        }
+
+        var notes2 = [];
+        for (var i = 0; i < numNotes; i++) {
+            notes2[i] = randomGenerator(noteProbabilities);
+            if (i != 0 && notes2[i-1] == 0 && notes2[i] == 6)
+                octaves2[i] = 2;
+            else if (i != 0 && notes2[i-1] == 6 && notes2[i] == 0)
+                octaves2[i] = 4;
+
+            noteProbabilities = origProbs.slice(0);
+            for (var j = 0; j < 7; j++) {
+                var tmp1 = notes2[i] - j;
+                var tmp2 = j - notes2[i];
+                if (tmp1 < 0) {
+                    tmp1 = tmp1 + 7;
+                } else if (tmp2 < 0) {
+                    tmp2 = tmp2 + 7;
+                } else if (tmp1 == 0) {
+                    noteProbabilities[(notes2[i]+j)%7] /= 2.0;
+                    continue;
+                }
+                var noteDist = Math.min(tmp1, tmp2);
+                noteProbabilities[(notes2[i]+j)%7] *= 1.5/noteDist;
+            }
+        }
+
+        //laplace sampling sorta
+        var noteDurProbabilities2 = noteProbabilities.slice(0);
+        for (var i = 0; i < 7; i++) {
+            noteDurProbabilities2[i] += 0.07;
+        }
+
+        var origDurProbabilities2 = noteDurProbabilities2.slice(0);
+
+        // How long each event lasts
+        var noteDurations2 = [];
+        for (var i = 0; i < numNotes; i++) {
+            noteDurations2[i] = randomDurationGenerator(noteDurProbabilities2, notes2[i]);
+            //noteDurProbabilities = origDurProbabilities.slice(0);
+        }
+
+        /*console.log(notes2);
+        console.log(octaves2);
+        console.log(noteDurations2);
+*/
+        fixMeter(totalBeats, notes2, octaves2, noteDurations2);
+
+
+
+
+
+
+
+
+
+
+
+        var degreePattern = new PSequence(notes.concat(notes, notes2, notes2), Infinity);
+        
+        var octavePattern = new PSequence(octaves.concat(octaves, octaves2, octaves2), Infinity);
+
+        var durationPattern = new PSequence(noteDurations.concat(noteDurations, noteDurations2, noteDurations2), Infinity);
 
         console.log(degreePattern);
         console.log(octavePattern);
@@ -378,11 +446,11 @@ function playStuff() {
         this.bassSynth.connect(this.audiolet.output);
 
         // Bassline
-        var degreePattern = new PSequence([0, 0, 1, 1, 2, 2, 3, 3],
+        var degreePattern = new PSequence([0, 3, 4, 4],
                                           Infinity);
 
         // How long each event lasts - gate on for 14, off for 2
-        var durationPattern = new PSequence([30, 2], Infinity);
+        var durationPattern = new PSequence([2, 2, 2, 2], Infinity);
 
         // Toggle the gate on and off
         var gatePattern = new PSequence([1, 0], Infinity);
