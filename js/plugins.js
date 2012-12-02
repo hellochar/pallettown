@@ -198,6 +198,30 @@ var geo_position_js=function() {
         {
                 provider.getCurrentPosition(success, error,opts);
         }
+
+        pub.watchPosition = function(success,error,opts)
+        {
+                if (provider.watchPosition)
+                {
+                        provider.watchPosition(success,error,opts);
+                }
+                else
+                {
+                        error();
+                }
+        }
+
+        pub.clearWatch = function(id)
+        {
+                if (provder.clearWatch)
+                {
+                        provder.clearWatch(id);
+                }
+                else
+                {
+                        error();
+                }
+        }
 		
 
         pub.init = function()

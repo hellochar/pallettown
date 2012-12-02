@@ -5,7 +5,7 @@
 
     function getLocation() {
         if (geo.init()) {
-            geo.getCurrentPosition(showPosition);
+            geo.watchPosition(showPosition);
         } else {
             $("#location").html("Geolocation is not supported by this browser.");
         }
